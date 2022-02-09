@@ -1,0 +1,57 @@
+#cloud-config
+hostname: conoha-ubuntu01
+users:
+  - default
+  - name: sd-admin
+    shell: /bin/bash
+    chpasswd:
+      expire: true
+    lock_passwd: false
+    sudo: ALL=(ALL)  NOPASSWD:ALL
+    groups: users, admin, sudo
+    ssh_pwauth: true
+    ssh_authorized_keys:
+      - ${public_key}
+bootcmd:
+timezone: Asia/Tokyo
+locale: ja_JP.utf8
+#
+# Comment out for the package options that could not be used at Conoha.
+#package_upgrade: true
+#packages:
+#  - make
+#  - screen
+#  - ruby
+#  - ruby-bundler
+write_files:
+  - content: |
+      # Enable to use IPv6
+      network:
+          ethernets:
+              eth0:
+                  addresses: []
+                  dhcp4: true
+                  dhcp6: true
+                  accept-ra: true
+                  optional: true
+          version: 2
+    owner: root:root
+    path: /etc/netplan/11-gmovps-enable-ipv6.yaml
+    permissions: '0644'
+runcmd:
+  - netplan apply
+  - apt --yes update
+  - apt --yes install gcc make sysstat tree multitail nmap git build-essential tcpdump iperf3 inetutils-traceroute vim screen docker docker-compose
+#  Comment out for the interuption of apt upgrade at the cloudinit.
+#  - apt --yes upgrade
+#
+  - cd /tmp
+  - git clone https://github.com/Microsoft/ntttcp-for-linux
+  - cd /tmp/ntttcp-for-linux/src
+  - make
+  - make install
+power_state:
+  delay: "+2"
+  mode: reboot
+  message: Reboot after init setting on clout init
+  timeout: 10
